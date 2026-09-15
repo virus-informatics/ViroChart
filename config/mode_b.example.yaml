@@ -2,12 +2,12 @@ mode: B
 
 paths:
   training_input_dir: data/training
-  embedding_input_dir: data/embedding
+  embedding_input_dir: data/embedding # unused in mode_b
   prior_matrix: resources/prior_w_gene_overlap_matrix_jaccard.tsv
   trained_model_dir: results/training/K12
-  embedding_output_dir: results/embedding/K12
+  embedding_output_dir: results/embedding/K12 # unused in mode_b
   reference_model_dir: reference/current_model_snapshot/K12
-  reference_embedding_dir: reference/original_embedding_output/K12
+  reference_embedding_dir: reference/original_embedding_output/K12 # unused in mode_b
   validation_dir: results/validation
 
 model:

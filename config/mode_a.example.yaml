@@ -1,12 +1,12 @@
 mode: A
 
 paths:
-  training_input_dir: data/training
+  training_input_dir: data/training # unused in mode_a
   embedding_input_dir: data/embedding
-  prior_matrix: resources/prior_w_gene_overlap_matrix_jaccard.tsv
+  prior_matrix: resources/prior_w_gene_overlap_matrix_jaccard.tsv # unused in mode_a
   trained_model_dir: results/training/K12
   embedding_output_dir: results/embedding/K12
-  reference_model_dir: reference/current_model_snapshot/K12
+  reference_model_dir: reference/current_model_snapshot/K12 # unused in mode_a
   reference_embedding_dir: reference/original_embedding_output/K12
   validation_dir: results/validation
 
@@ -19,9 +19,9 @@ model:
   cmdstan_path: "" # empty: cmdstanr auto-detects conda cmdstan
 
 preprocessing:
-  fill_combo_missing_with_zero: true
-  host_min_count: null
-  feature_alignment: strict_paper_order # TODO: unused. should be removed
+  fill_combo_missing_with_zero: true # unused in mode_a
+  host_min_count: null # unused in mode_a
+  feature_alignment: strict_paper_order # unused in mode_a. TODO: unused in workflow. should be removed
 
 execution:
   overwrite: false # TODO: unused. should be removed
