@@ -136,6 +136,7 @@ rule compare_mode_b:
         psi=rules.extract_mode_b.output.psi,
         z=rules.extract_mode_b.output.z,
         reference_w=REFERENCE_MODEL / "W.csv",
+        # TODO: reference psi_prior.csv and z_out.csv are also read by compare_mode_b.py but not declared here
     output:
         VALIDATION / "mode_b_comparison.json",
     shell:
