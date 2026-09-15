@@ -41,9 +41,14 @@ conda env create --file virochart-stan.environment.yml
 conda activate virochart-stan
 ```
 
-The Stan executables bundled in `workflow/models/` are built for macOS on Apple Silicon. On Linux, recompile them for the current platform before the first run:
+Prepare the Stan executables in `workflow/models/` for your platform:
 
 ```bash
+# macOS (Apple Silicon)
+cp workflow/models/factor_analysis_model_14_wh.mac workflow/models/factor_analysis_model_14_wh
+cp workflow/models/factor_analysis_model_14_pred.mac workflow/models/factor_analysis_model_14_pred
+
+# Linux
 cmdstan_path=$(Rscript -e 'cat(cmdstanr::cmdstan_path())')
 make -C ${cmdstan_path} $(pwd)/workflow/models/factor_analysis_model_14_wh
 make -C ${cmdstan_path} $(pwd)/workflow/models/factor_analysis_model_14_pred
