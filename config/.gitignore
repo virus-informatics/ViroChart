@@ -1,0 +1,4 @@
+# Ignore all except example configs
+*
+!.gitignore
+!*.example.yaml

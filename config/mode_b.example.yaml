@@ -1,0 +1,29 @@
+mode: B
+
+paths:
+  training_input_dir: data/training
+  embedding_input_dir: data/embedding
+  prior_matrix: resources/prior_w_gene_overlap_matrix_jaccard.tsv
+  trained_model_dir: results/training/K12
+  embedding_output_dir: results/embedding/K12
+  reference_model_dir: reference/current_model_snapshot/K12
+  reference_embedding_dir: reference/original_embedding_output/K12
+  validation_dir: results/validation
+
+model:
+  k: 12
+  iterations: 2000
+  lambda_w: 1.0
+  seed: 123
+  init: 0.1
+  cmdstan_path: "" # empty: cmdstanr auto-detects conda cmdstan
+
+preprocessing:
+  fill_combo_missing_with_zero: true
+  host_min_count: null
+  feature_alignment: strict_paper_order
+
+execution:
+  overwrite: false # unused: not referenced in workflow
+  # rscript_path: Rscript  # default: PATH resolution via conda activate
+  # python_path: python3   # default: PATH resolution via conda activate
