@@ -1,0 +1,209 @@
+from pathlib import Path
+
+configfile: "../config/paper_reproduction.yaml"
+
+ROOT = Path(workflow.basedir).parent.resolve()
+SCRIPTS = ROOT / "workflow" / "scripts"
+R_DIR = ROOT / "workflow" / "r"
+MODELS = ROOT / "workflow" / "models"
+
+
+def rooted(value):
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
+PATHS = config["paths"]
+MODEL = config["model"]
+PREP = config["preprocessing"]
+EXEC = config["execution"]
+
+TRAIN_INPUT = rooted(PATHS["training_input_dir"])
+EMBED_INPUT = rooted(PATHS["embedding_input_dir"])
+PRIOR_MATRIX = rooted(PATHS["prior_matrix"])
+TRAINED_MODEL = rooted(PATHS["trained_model_dir"])
+EMBED_OUTPUT = rooted(PATHS["embedding_output_dir"])
+REFERENCE_MODEL = rooted(PATHS.get("reference_model_dir", "reference/current_model_snapshot/K12"))
+REFERENCE_EMBED = rooted(PATHS.get("reference_embedding_dir", "reference/original_embedding_output/K12"))
+VALIDATION = rooted(PATHS.get("validation_dir", "results/validation"))
+K = int(MODEL["k"])
+R_SCRIPT = EXEC.get("rscript_path", "Rscript")
+PYTHON = EXEC.get("python_path", "python3")
+TRAIN_RESULT = TRAINED_MODEL / "result_full_r441"
+EMBED_RESULT = EMBED_OUTPUT / "result_full"
+
+
+rule all:
+    input:
+        VALIDATION / "mode_b_comparison.json",
+        VALIDATION / "mode_a_comparison.json",
+        TRAINED_MODEL / "model_manifest.json",
+
+
+rule mode_b:
+    input:
+        VALIDATION / "mode_b_comparison.json",
+        TRAINED_MODEL / "model_manifest.json",
+
+
+rule mode_a:
+    input:
+        VALIDATION / "mode_a_comparison.json",
+
+
+rule prepare_mode_b:
+    input:
+        score=TRAIN_INPUT / "score.csv",
+        score_add=TRAIN_INPUT / "score_add.csv",
+        metadata=TRAIN_INPUT / "metadata.csv",
+        prior=PRIOR_MATRIX,
+    output:
+        flag=TRAINED_MODEL / ".mode_b_prepared",
+        y=TRAINED_MODEL / "Y.csv",
+        scaler=TRAINED_MODEL / "scaler.joblib",
+        features=TRAINED_MODEL / "feature_order.csv",
+        meta=TRAINED_MODEL / "meta.json",
+    params:
+        input_dir=TRAIN_INPUT,
+        output_dir=TRAINED_MODEL,
+        host_arg=(
+            f"--host-min-count {int(PREP['host_min_count'])}"
+            if PREP.get("host_min_count") is not None else ""
+        ),
+        missing_arg="" if PREP.get("fill_combo_missing_with_zero", True) else "--no-fill-missing",
+    shell:
+        "{PYTHON} {SCRIPTS}/prepare_mode_b.py "
+        "--input-dir {params.input_dir} --prior-matrix {input.prior} "
+        "--output-dir {params.output_dir} --k {K} {params.host_arg} {params.missing_arg}"
+
+
+rule train_mode_b:
+    input:
+        prepared=rules.prepare_mode_b.output.flag,
+        y=rules.prepare_mode_b.output.y,
+        model=MODELS / "factor_analysis_model_14_wh.stan",
+        executable=MODELS / "factor_analysis_model_14_wh",
+    output:
+        pointer=TRAIN_RESULT / "output_csv_path.txt",
+        version=TRAIN_RESULT / "cmdstan_version.txt",
+        session=TRAIN_RESULT / "r_session_info.txt",
+    params:
+        data_dir=TRAINED_MODEL,
+        result_dir=TRAIN_RESULT,
+    shell:
+        "{R_SCRIPT} {R_DIR}/train_mode_b.R {input.model} {input.executable} "
+        "{params.data_dir} {params.result_dir} {K} {MODEL[iterations]} {MODEL[lambda_w]} "
+        "{MODEL[seed]} {MODEL[init]} '{MODEL[cmdstan_path]}'"
+
+
+rule extract_mode_b:
+    input:
+        pointer=rules.train_mode_b.output.pointer,
+        features=rules.prepare_mode_b.output.features,
+    output:
+        w=TRAINED_MODEL / "W.csv",
+        psi=TRAINED_MODEL / "psi_prior.csv",
+        z=TRAINED_MODEL / "z_out.csv",
+        flag=TRAINED_MODEL / ".parameters_extracted",
+    params:
+        data_dir=TRAINED_MODEL,
+        output_dir=TRAINED_MODEL,
+    shell:
+        "{PYTHON} {SCRIPTS}/extract_stan_parameters.py --mode training "
+        "--stan-csv-pointer {input.pointer} --data-dir {params.data_dir} --output-dir {params.output_dir}"
+
+
+rule model_manifest:
+    input:
+        w=rules.extract_mode_b.output.w,
+        psi=rules.extract_mode_b.output.psi,
+        scaler=rules.prepare_mode_b.output.scaler,
+        model=MODELS / "factor_analysis_model_14_wh.stan",
+        executable=MODELS / "factor_analysis_model_14_wh",
+        version=rules.train_mode_b.output.version,
+        session=rules.train_mode_b.output.session,
+    output:
+        TRAINED_MODEL / "model_manifest.json",
+    shell:
+        "{PYTHON} {SCRIPTS}/write_model_manifest.py --model-dir {TRAINED_MODEL} "
+        "--stan-model {input.model} --stan-executable {input.executable} "
+        "--result-dir {TRAIN_RESULT} --output {output}"
+
+
+rule compare_mode_b:
+    input:
+        w=rules.extract_mode_b.output.w,
+        psi=rules.extract_mode_b.output.psi,
+        z=rules.extract_mode_b.output.z,
+        reference_w=REFERENCE_MODEL / "W.csv",
+    output:
+        VALIDATION / "mode_b_comparison.json",
+    shell:
+        "{PYTHON} {SCRIPTS}/compare_mode_b.py --reference-dir {REFERENCE_MODEL} "
+        "--candidate-dir {TRAINED_MODEL} --output {output}"
+
+
+rule prepare_mode_a:
+    input:
+        score=EMBED_INPUT / "score.csv",
+        score_add=EMBED_INPUT / "score_add.csv",
+        metadata=EMBED_INPUT / "metadata.csv",
+        w=rules.extract_mode_b.output.w,
+        psi=rules.extract_mode_b.output.psi,
+        scaler=rules.prepare_mode_b.output.scaler,
+        manifest=rules.model_manifest.output,
+    output:
+        flag=EMBED_OUTPUT / ".mode_a_prepared",
+        y=EMBED_OUTPUT / "Y.csv",
+        features=EMBED_OUTPUT / "feature_order.csv",
+        meta=EMBED_OUTPUT / "meta.json",
+    params:
+        input_dir=EMBED_INPUT,
+        output_dir=EMBED_OUTPUT,
+    shell:
+        "{PYTHON} {SCRIPTS}/prepare_mode_a.py --input-dir {params.input_dir} "
+        "--trained-model-dir {TRAINED_MODEL} --output-dir {params.output_dir} --k {K}"
+
+
+rule embed_mode_a:
+    input:
+        prepared=rules.prepare_mode_a.output.flag,
+        y=rules.prepare_mode_a.output.y,
+        model=MODELS / "factor_analysis_model_14_pred.stan",
+        executable=MODELS / "factor_analysis_model_14_pred",
+    output:
+        pointer=EMBED_RESULT / "output_csv_path.txt",
+    params:
+        data_dir=EMBED_OUTPUT,
+        result_dir=EMBED_RESULT,
+    shell:
+        "{R_SCRIPT} {R_DIR}/embed_mode_a.R {input.model} {input.executable} "
+        "{params.data_dir} {params.result_dir} {TRAINED_MODEL} {K} {MODEL[iterations]} "
+        "{MODEL[seed]} {MODEL[init]} '{MODEL[cmdstan_path]}' paper_reproduction"
+
+
+rule extract_mode_a:
+    input:
+        pointer=rules.embed_mode_a.output.pointer,
+        features=rules.prepare_mode_a.output.features,
+    output:
+        z=EMBED_OUTPUT / "z_out.csv",
+        flag=EMBED_OUTPUT / ".parameters_extracted",
+    params:
+        data_dir=EMBED_OUTPUT,
+        output_dir=EMBED_OUTPUT,
+    shell:
+        "{PYTHON} {SCRIPTS}/extract_stan_parameters.py --mode embedding "
+        "--stan-csv-pointer {input.pointer} --data-dir {params.data_dir} --output-dir {params.output_dir}"
+
+
+rule compare_mode_a:
+    input:
+        y=rules.prepare_mode_a.output.y,
+        z=rules.extract_mode_a.output.z,
+        reference_z=REFERENCE_EMBED / "z_out.csv",
+    output:
+        VALIDATION / "mode_a_comparison.json",
+    shell:
+        "{PYTHON} {SCRIPTS}/compare_mode_a.py --reference-dir {REFERENCE_EMBED} "
+        "--candidate-dir {EMBED_OUTPUT} --output {output}"
