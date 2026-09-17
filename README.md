@@ -2,7 +2,7 @@
 
 ## About this repository
 
-<!-- TODO: to be written by the repository owner -->
+ViroChart: Quantitative host-response mapping enables functional profiling of viruses detected by virome sequencing
 
 ## Overall workflow
 
@@ -23,7 +23,7 @@ flowchart LR
     end
 
     Model --> ModeA
-    DistributedModel["Distributed paper model"] --> ModeA
+    DistributedModel["Parameters from the trained model in original paper"] --> ModeA
 ```
 
 ## Usage
@@ -47,7 +47,11 @@ Prepare the Stan executables in `workflow/models/` for your platform:
 # macOS (Apple Silicon)
 cp workflow/models/factor_analysis_model_14_wh.mac workflow/models/factor_analysis_model_14_wh
 cp workflow/models/factor_analysis_model_14_pred.mac workflow/models/factor_analysis_model_14_pred
+```
 
+> **macOS:** The pre-built Stan executables are not signed by Apple. macOS may display a security warning stating that the file cannot be verified. Allow execution via your macOS Privacy & Security settings.
+
+```bash
 # Linux
 cmdstan_path=$(Rscript -e 'cat(cmdstanr::cmdstan_path())')
 make -C ${cmdstan_path} $(pwd)/workflow/models/factor_analysis_model_14_wh
@@ -64,15 +68,14 @@ cp config/mode_b.example.yaml config/mode_b.yaml
 
 Key settings in `config/mode_b.yaml`:
 
-| Key                            | Description                                                       |
-| ------------------------------ | ----------------------------------------------------------------- |
-| `paths.training_input_dir`     | Directory containing `score.csv`, `score_add.csv`, `metadata.csv` |
-| `paths.prior_matrix`           | Path to prior matrix file                                         |
-| `paths.trained_model_dir`      | Output directory for trained model                                |
-| `model.k`                      | Model dimensionality                                              |
-| `model.iterations`             | Optimization iterations                                           |
-| `model.seed`                   | Random seed                                                       |
-| `preprocessing.host_min_count` | Minimum sample count per host (null to disable filtering)         |
+| Key                        | Description                                                       |
+| -------------------------- | ----------------------------------------------------------------- |
+| `paths.training_input_dir` | Directory containing `score.csv`, `score_add.csv`, `metadata.csv` |
+| `paths.prior_matrix`       | Path to prior matrix file                                         |
+| `paths.trained_model_dir`  | Output directory for trained model                                |
+| `model.k`                  | Model dimensionality                                              |
+| `model.iterations`         | Optimization iterations                                           |
+| `model.seed`               | Random seed                                                       |
 
 #### Run
 
@@ -98,9 +101,9 @@ snakemake --snakefile workflow/Snakefile \
 
 ### extract_mode_a: Embedding with trained model
 
-Embed new pathway activity scores using a trained model. Uses the scaler from Mode B (or the distributed paper model) to transform input, then runs Stan optimization to produce embedding coordinates.
+Embed project newly acquired RNA-seq data into the existing latent space. Uses the scaler from Mode B (or the distributed paper model) to transform input, then runs Stan optimization to produce embedding coordinates.
 
-**Requires:** a trained model directory produced by Mode B, containing all of the following. Point `paths.trained_model_dir` at it. extract_mode_a only reads from this directory.
+**Requires:** a trained model directory containing all of the following. The default is `reference/current_model_snapshot/` (parameters from the original paper). To use a custom model trained via Mode B, point `paths.trained_model_dir` at its output directory. extract_mode_a only reads from this directory.
 
 ```text
 <paths.trained_model_dir>/
