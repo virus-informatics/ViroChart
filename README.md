@@ -56,7 +56,7 @@ make -C ${cmdstan_path} $(pwd)/workflow/models/factor_analysis_model_14_pred
 
 Embed project newly acquired RNA-seq data into the existing latent space. Uses the scaler from Mode B (or the distributed paper model) to transform input, then runs Stan optimization to produce embedding coordinates.
 
-**Requires:** a trained model directory containing all of the following. The default is `reference/current_model_snapshot/` (parameters from the original paper). To use a custom model trained via Mode B, point `paths.trained_model_dir` at its output directory. extract_mode_a only reads from this directory.
+**Requires:** a trained model directory (`paths.trained_model_dir`) containing all of the following. The default points to the original paper's parameters. Change it only when using your own model trained via Mode B.
 
 ```text
 <paths.trained_model_dir>/

@@ -4,7 +4,7 @@ paths:
   training_input_dir: data/training # unused in mode_a
   embedding_input_dir: data/embedding
   prior_matrix: resources/prior_w_gene_overlap_matrix_jaccard.tsv # unused in mode_a
-  trained_model_dir: results/training/K12
+  trained_model_dir: reference/current_model_snapshot/K12
   embedding_output_dir: results/embedding/K12
   reference_model_dir: reference/current_model_snapshot/K12 # unused in mode_a
   reference_embedding_dir: reference/original_embedding_output/K12
