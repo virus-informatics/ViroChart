@@ -1,4 +1,7 @@
 #!/usr/bin/env Rscript
+# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-FileCopyrightText: Copyright 2026 Junna Kawasaki & Jumpei Ito
+
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 7) {
   stop("Usage: ssgsea_single_sample.R TPM pathway.gmt element.gmt sample score.csv score_add.csv session.txt")

@@ -1,4 +1,7 @@
 #!/usr/bin/env Rscript
+# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-FileCopyrightText: Copyright 2026 Junna Kawasaki & Jumpei Ito
+
 
 options(repos = c(
   STAN = "https://stan-dev.r-universe.dev",

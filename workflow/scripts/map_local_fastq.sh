@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-FileCopyrightText: Copyright 2026 Junna Kawasaki & Jumpei Ito
+
 set -euo pipefail
 
 sample="$1"

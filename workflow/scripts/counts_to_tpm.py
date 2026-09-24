@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-FileCopyrightText: Copyright 2026 Junna Kawasaki & Jumpei Ito
+
 import argparse
 import json
 import re

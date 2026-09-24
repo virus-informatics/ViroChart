@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# SPDX-FileCopyrightText: Copyright 2026 Junna Kawasaki & Jumpei Ito
+
 from __future__ import annotations
 
 import hashlib
